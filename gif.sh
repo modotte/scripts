@@ -1,6 +1,9 @@
 #!/bin/bash
 
 # Description: Find issues on github with either labels, language, tags, or keywords.
+# Requires bash-tint for colors!
+
+. lib/bash-tint/src/tint
 
 set -ef
 
@@ -11,7 +14,7 @@ if [[ ! "$(command -v jq)" ||  ! "$(command -v curl)" ]]; then
     for i in "${required_tools[@]}"; do
         test ! "$(command -v "$i")" && >&2 echo "You are missing the $i tool!"
     done
-    >&2 echo "Need both jq and curl tools installed to run!"
+    >&2 tintf "bold(%s) %s\n" "red(Error:)" "Need both jq and curl tools installed to run!"
     exit 1
 fi
 
@@ -33,13 +36,13 @@ else
     if [[ "$(curl -s -H "$API_HEADER" -i "https://api.github.com/search/issues?q=$QUERY" | awk 'NR==1 && /^HTTP/ {print $2}')" = 403 ]];then
         _x="^API rate limit exceeded"
         if [[ "$(echo "$data" | jq '.message')" =~ x ]]; then
-            >&2 echo "Github's API rate limit exceeded. Please try again in another hour."
+            >&2 tintf "bold(%s) %s\n" "red(Error:)" "Github's API rate limit exceeded. Please try again in another hour."
             exit 1
         fi
     fi
 
     if [[ "$(echo "$data" | jq '.total_count')" = 0 ]];then
-        >&2 echo "No results found. Please try again with different query."
+        >&2 tintf "bold(%s) %s\n" "red(Error:)" "No results found. Please try again with different query."
         exit 1
     fi
 fi
@@ -50,7 +53,7 @@ readarray -t titles < <(echo "$data" | jq '.items[].title')
 readarray -t html_urls < <(echo "$data" | jq '.items[].html_url')
 
 for i in "${!titles[@]}"; do
-    echo "Title: ${titles[$i]}"
-    echo "URL:   ${html_urls[$i]}"
+    tintf "bold(%s) %s\n" "green(Title:)" "${titles[$i]}"
+    tintf "bold(%s) %s\n" "yellow(URL:  )" "${html_urls[$i]}"
 done
 
