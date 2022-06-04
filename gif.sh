@@ -38,16 +38,14 @@ if [[ -z "$QUERY" ]]; then
     exit 1
 else    
     data="$(curl -s -H "$API_HEADER" "$API_LINK+$QUERY")"
-
     if [[ "$(response_code)" = "$ACCESS_FORBIDDEN" ]];then
-        _x="^API rate limit exceeded"
         if [[ "$(echo "$data" | jq '.message')" =~ x ]]; then
             >&2 tintf "bold(%s) %s\n" "red(Error:)" "Github's API rate limit exceeded. Please try again in another hour."
             exit 1
         fi
     fi
 
-    if [[ "$(echo "$data" | jq '.total_count')" = 0 ]];then
+    if [[ "$(echo "$data" | jq '.total_count')" = 0 && ! "$(echa "$data" | jq '.total_count')" -eq "null" ]];then
         >&2 tintf "bold(%s) %s\n" "red(Error:)" "No results found. Please try again with different query."
         exit 1
     fi
