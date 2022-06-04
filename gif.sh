@@ -7,11 +7,11 @@
 
 set -ef
 
-required_tools=("jq" "curl" "awk")
+REQUIRED_TOOLS=("jq" "curl" "awk")
 
 # Check for missing tools to perform the script reliably.
 if [[ ! "$(command -v jq)" ||  ! "$(command -v curl)" || ! "$(command -v awk)" ]]; then
-    for i in "${required_tools[@]}"; do
+    for i in "${REQUIRED_TOOLS[@]}"; do
         test ! "$(command -v "$i")" && >&2 echo "You are missing the $i tool!"
     done
     >&2 tintf "bold(%s) %s\n" "red(Error:)" "Need jq, curl and awk installed to run!"
@@ -20,14 +20,18 @@ fi
 
 API_HEADER="Accept: application/vnd.github.v3+json"
 API_LINK="https://api.github.com/search/issues?q=is:issue"
+QUERY="$1"
+ACCESS_FORBIDDEN=403
 
 show_help () {
     >&2 echo "Usage: $0 <QUERY>"
     >&2 echo "Example: $0 'app+language=haskell+label=bug'"
 }
 
-QUERY="$1"
-ACCESS_FORBIDDEN=403
+
+response_code () {
+    curl -s -H "$API_HEADER" -i "$API_LINK+$QUERY" | awk 'NR==1 && /^HTTP/ {print $2}'
+}
 
 if [[ -z "$QUERY" ]]; then
     show_help
@@ -35,7 +39,7 @@ if [[ -z "$QUERY" ]]; then
 else    
     data="$(curl -s -H "$API_HEADER" "$API_LINK+$QUERY")"
 
-    if [[ "$(curl -s -H "$API_HEADER" -i "$API_LINK+$QUERY" | awk 'NR==1 && /^HTTP/ {print $2}')" = "$ACCESS_FORBIDDEN" ]];then
+    if [[ "$(response_code)" = "$ACCESS_FORBIDDEN" ]];then
         _x="^API rate limit exceeded"
         if [[ "$(echo "$data" | jq '.message')" =~ x ]]; then
             >&2 tintf "bold(%s) %s\n" "red(Error:)" "Github's API rate limit exceeded. Please try again in another hour."
