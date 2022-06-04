@@ -35,7 +35,7 @@ if [[ -z "$QUERY" ]]; then
 else    
     data="$(curl -s -H "$API_HEADER" "$API_LINK+$QUERY")"
 
-    if [[ "$(curl -s -H "$API_HEADER" -i "$API_LINK+$QUERY" | awk 'NR==1 && /^HTTP/ {print $2}')" = $ACCESS_FORBIDDEN ]];then
+    if [[ "$(curl -s -H "$API_HEADER" -i "$API_LINK+$QUERY" | awk 'NR==1 && /^HTTP/ {print $2}')" = "$ACCESS_FORBIDDEN" ]];then
         _x="^API rate limit exceeded"
         if [[ "$(echo "$data" | jq '.message')" =~ x ]]; then
             >&2 tintf "bold(%s) %s\n" "red(Error:)" "Github's API rate limit exceeded. Please try again in another hour."
