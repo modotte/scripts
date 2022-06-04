@@ -45,7 +45,7 @@ else
         fi
     fi
 
-    if [[ "$(echo "$data" | jq '.total_count')" = 0 && ! "$(echa "$data" | jq '.total_count')" -eq "null" ]];then
+    if [[ "$(echo "$data" | jq '.total_count')" = 0 ]];then
         >&2 tintf "bold(%s) %s\n" "red(Error:)" "No results found. Please try again with different query."
         exit 1
     fi
