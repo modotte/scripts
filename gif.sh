@@ -4,7 +4,13 @@
 
 set -ef pipefail
 
-if [[ ! $(command -v jq) || ! $(command -v curl) ]];then
+required_tools=("jq" "curl")
+
+# Check for missing tools to perform the script reliably.
+if [[ ! $(command -v jq) || ! $(command -v curl) ]]; then
+    for i in "${required_tools[@]}"; do
+        test ! "$(command -v "$i")" && >&2 echo "You are missing the $i tool!"
+    done
     >&2 echo "Need both jq and curl tool installed to run!"
     exit 1
 fi
