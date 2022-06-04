@@ -2,7 +2,7 @@
 
 # Description: Find issues on github with either labels, language, tags, or keywords.
 
-set -ef pipefail
+set -ef
 
 required_tools=("jq" "curl")
 
@@ -18,18 +18,36 @@ fi
 API_HEADER="Accept: application/vnd.github.v3+json"
 
 show_help () {
-    >&2 echo "Usage: $0 [--language='haskell'|--label='good first issue']"
-    >&2 echo "Example: $0"
+    >&2 echo "Usage: $0 <QUERY>"
+    >&2 echo "Example: $0 'app+language=haskell+label=bug'"
 }
 
-LANGUAGE="$1"
+QUERY="$1"
 
-data=$(curl -s -H "$API_HEADER" "https://api.github.com/search/issues?q=language=$LANGUAGE")
+if [[ -z "$QUERY" ]]; then
+    show_help
+    exit 1
+else    
+    data="$(curl -s -H "$API_HEADER" "https://api.github.com/search/issues?q=$QUERY")"
+
+    if [[ "$(curl -s -H "$API_HEADER" -i "https://api.github.com/search/issues?q=$QUERY" | awk 'NR==1 && /^HTTP/ {print $2}')" = 403 ]];then
+        _x="^API rate limit exceeded"
+        if [[ "$(echo "$data" | jq '.message')" =~ x ]]; then
+            >&2 echo "Github's API rate limit exceeded. Please try again in another hour."
+            exit 1
+        fi
+    fi
+
+    if [[ "$(echo "$data" | jq '.total_count')" = 0 ]];then
+        >&2 echo "No results found. Please try again with different query."
+        exit 1
+    fi
+fi
 
 titles=()
 html_urls=()
-readarray -t titles < <(echo "$data" | jq '.items.[].title')
-readarray -t html_urls < <(echo "$data" | jq '.items.[].html_url')
+readarray -t titles < <(echo "$data" | jq '.items[].title')
+readarray -t html_urls < <(echo "$data" | jq '.items[].html_url')
 
 for i in "${!titles[@]}"; do
     echo "Title: ${titles[$i]}"
